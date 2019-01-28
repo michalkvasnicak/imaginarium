@@ -29,3 +29,5 @@ jobs:
       - run:
           name: Test
           command: yarn test:ci
+      - store_artifacts:
+          path: ./src/__tests__/__image_snapshots__/__diff_output__
