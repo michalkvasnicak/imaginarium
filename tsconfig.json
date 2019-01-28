@@ -1,0 +1,14 @@
+{
+  "compilerOptions": {
+    "allowJs": false,
+    "esModuleInterop": true,
+    "lib": ["es2018"],
+    "module": "es2015",
+    "moduleResolution": "node",
+    "skipLibCheck": true,
+    "strict": true,
+    "target": "es2018"
+  },
+  "include": ["src"],
+  "exclude": ["node_modules"]
+}

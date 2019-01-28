@@ -1,0 +1,31 @@
+version: 2
+jobs:
+  build:
+    working_directory: ~/imaginarium
+    docker:
+      - image: lambci/lambda:build-nodejs8.10
+    steps:
+      - checkout
+      - run:
+          name: Yarn
+          command: |
+            curl --silent --location https://dl.yarnpkg.com/rpm/yarn.repo | tee /etc/yum.repos.d/yarn.repo
+            yum install -y yarn
+      - restore_cache:
+          key: yarndeps-{{ .Branch }}-{{ checksum "yarn.lock" }}
+      - run:
+          name: Dependencies
+          command: yarn install --cache-folder ~/.yarn-cache
+      - save_cache:
+          key: yarndeps-{{ .Branch }}-{{ checksum "yarn.lock" }}
+          paths:
+            - ~/.yarn-cache
+      - run:
+          name: Typecheck
+          command: yarn typecheck
+      - run:
+          name: Lint
+          command: yarn lint
+      - run:
+          name: Test
+          command: yarn test:ci
