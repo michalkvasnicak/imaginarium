@@ -12,6 +12,7 @@ const optionalVariables = [
   'CDN_CERTIFICATE_ARN',
   'S3_IMAGE_KEY_PATTERN',
   'STACK_NAME',
+  'SERVICENAME',
 ];
 
 requiredVariables.forEach(variable => {

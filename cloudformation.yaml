@@ -97,7 +97,7 @@ Resources:
     DependsOn: [ImageHandlerFunction, ImaginariumApiGWRole]
     Type: 'AWS::ApiGateway::RestApi'
     Properties:
-      Name: !Sub atoto-${SERVICENAME}
+      Name: !Sub ${SERVICENAME}
       EndpointConfiguration:
         Types:
           - REGIONAL
@@ -248,8 +248,8 @@ Resources:
     Type: 'AWS::Serverless::Function'
     Properties:
       CodeUri: ./dist
-      Description: Atoto image handler
-      FunctionName: !Sub atoto-${SERVICENAME}
+      Description: Imaginarium image handler
+      FunctionName: !Sub ${SERVICENAME}
       Handler: index.handler
       MemorySize: 1536 # more computing power
       Runtime: nodejs8.10

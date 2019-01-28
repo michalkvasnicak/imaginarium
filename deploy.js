@@ -57,6 +57,10 @@ if (process.env.S3_IMAGE_KEY_PATTERN) {
   );
 }
 
+if (process.env.SERVICENAME) {
+  parameterOverrides.push(`SERVICENAME=${process.env.SERVICENAME}`);
+}
+
 // now deploy lambda
 shell.exec(
   `aws --region ${region} cloudformation deploy --template-file dist/template.yml --stack-name ${stackName} --parameter-overrides ${parameterOverrides.join(
