@@ -1,4 +1,4 @@
-# Imaginarium
+# Imaginarium [![CircleCI](https://circleci.com/gh/michalkvasnicak/imaginarium.svg?style=svg&circle-token=b0329dc8351a6274382784ef0a750a146b597a7b)](https://circleci.com/gh/michalkvasnicak/imaginarium)
 
 🖼️ Serverless javascript image processor based on [Sharp](http://sharp.pixelplumbing.com/en/stable/).
 
