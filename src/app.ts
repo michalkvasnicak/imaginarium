@@ -116,7 +116,6 @@ const manipulator: express.RequestHandler = async (req, res, next) => {
       }
       case 'image/svg+xml': {
         const metadata = await originalImage.metadata();
-        console.log(metadata);
 
         if (metadata.format !== 'svg') {
           // @ts-ignore
@@ -124,13 +123,13 @@ const manipulator: express.RequestHandler = async (req, res, next) => {
         }
 
         res.set('Content-Type', 'image/svg+xml');
-        /* res.set(
+        res.set(
           'Content-Length',
           (typeof file.Body === 'string'
             ? Buffer.from(file.Body, 'ascii')
             : (file.Body as Buffer)
-          ).byteLength,
-        );*/
+          ).byteLength.toString(),
+        );
         res.set('Cache-Control', cacheControl);
         res.status(200);
         return res.send(file.Body);
@@ -140,7 +139,6 @@ const manipulator: express.RequestHandler = async (req, res, next) => {
       }
     }
   } catch (e) {
-    console.log(e);
     if ((e as AWS.AWSError).statusCode === 404) {
       return res.sendStatus(404);
     }
