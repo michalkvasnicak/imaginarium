@@ -17,6 +17,15 @@ Supports:
 
 ## Structure of URL and supported operations
 
+### Original
+
+Returns the original image with applied parameters (`quality, blur, etc`).
+
+```
+/{filename}
+/{filename}/parameters?
+```
+
 ### Cover mode
 
 The replaced content is sized to maintain its aspect ratio while filling the element’s entire content box. If the object's aspect ratio does not match the aspect ratio of its box, then the object will be clipped to fit.
@@ -68,7 +77,7 @@ Preserving aspect ratio, resize the image to be as small as possible while ensur
 
 #### Quality
 
-- `quality(value)` - where `value` is number between `1` and `100`
+- `quality(value)` - where `value` is number between `1` and `100`, `default` is `80`
 
 #### Progressive (only `jpeg` and `png`)
 
