@@ -1,6 +1,6 @@
 import { S3 } from 'aws-sdk';
 import express from 'express';
-import sharp from 'sharp';
+import sharp, { Sharp } from 'sharp';
 import parseParameters, { Parameters } from './parseParameters';
 
 const region = process.env.AWS_REGION;
@@ -54,8 +54,8 @@ const manipulator: express.RequestHandler = async (req, res, next) => {
         Key: fileKeyPattern.replace(':filename', req.params.filename),
       })
       .promise();
-    let image = manipulation(sharp(file.Body as Buffer));
     const cacheControl = 'max-age=31556926, immutable'; // 1 year of immutable
+    const originalImage = sharp(file.Body as Buffer);
     const {
       alphaQuality,
       blur,
@@ -63,22 +63,29 @@ const manipulator: express.RequestHandler = async (req, res, next) => {
       quality = 80,
       rotate,
     } = manipulationParameters;
+    const applyOperations = (originalImage: Sharp) => {
+      let image = manipulation(originalImage);
 
-    // apply operations
-    if (rotate != null) {
-      image = image.rotate(rotate.angle, {
-        background: rotate.background,
-      });
-    }
+      // apply operations
+      if (rotate != null) {
+        image = image.rotate(rotate.angle, {
+          background: rotate.background,
+        });
+      }
 
-    if (blur != null) {
-      image = image.blur(blur !== true ? blur : undefined);
-    }
+      if (blur != null) {
+        image = image.blur(blur !== true ? blur : undefined);
+      }
+
+      return image;
+    };
 
     // negotiate content
-    switch (req.accepts(['image/jpeg', 'image/png', 'image/webp'])) {
+    switch (
+      req.accepts(['image/jpeg', 'image/png', 'image/webp', 'image/svg+xml'])
+    ) {
       case 'image/webp': {
-        const body = await image
+        const body = await applyOperations(originalImage)
           .toFormat('webp', { alphaQuality, quality })
           .toBuffer();
         res.set('Content-Type', 'image/webp');
@@ -88,7 +95,7 @@ const manipulator: express.RequestHandler = async (req, res, next) => {
         return res.send(body);
       }
       case 'image/png': {
-        const body = await image
+        const body = await applyOperations(originalImage)
           .toFormat('png', { progressive, quality })
           .toBuffer();
         res.set('Content-Type', 'image/png');
@@ -98,7 +105,7 @@ const manipulator: express.RequestHandler = async (req, res, next) => {
         return res.send(body);
       }
       case 'image/jpeg': {
-        const body = await image
+        const body = await applyOperations(originalImage)
           .toFormat('jpeg', { progressive, quality })
           .toBuffer();
         res.set('Content-Type', 'image/jpeg');
@@ -107,11 +114,33 @@ const manipulator: express.RequestHandler = async (req, res, next) => {
         res.status(200);
         return res.send(body);
       }
+      case 'image/svg+xml': {
+        const metadata = await originalImage.metadata();
+        console.log(metadata);
+
+        if (metadata.format !== 'svg') {
+          // @ts-ignore
+          return res.send(406, `Can't convert ${metadata.format} to SVG`);
+        }
+
+        res.set('Content-Type', 'image/svg+xml');
+        /* res.set(
+          'Content-Length',
+          (typeof file.Body === 'string'
+            ? Buffer.from(file.Body, 'ascii')
+            : (file.Body as Buffer)
+          ).byteLength,
+        );*/
+        res.set('Cache-Control', cacheControl);
+        res.status(200);
+        return res.send(file.Body);
+      }
       default: {
         return res.sendStatus(406);
       }
     }
   } catch (e) {
+    console.log(e);
     if ((e as AWS.AWSError).statusCode === 404) {
       return res.sendStatus(404);
     }

@@ -6,3 +6,6 @@ export const jpegBigFixture = readFileSync(
 );
 export const owlFixture = readFileSync(resolvePath(__dirname, './owl.jpeg'));
 export const pngFixture = readFileSync(resolvePath(__dirname, './logo.png'));
+export const smallSvgFixture = readFileSync(
+  resolvePath(__dirname, './small.svg'),
+);

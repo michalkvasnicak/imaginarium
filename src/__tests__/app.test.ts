@@ -2,7 +2,7 @@
 import { AWSError, getObjectMock } from 'aws-sdk';
 import request from 'supertest';
 import app from '../app';
-import { jpegBigFixture, owlFixture } from './fixtures';
+import { jpegBigFixture, owlFixture, smallSvgFixture } from './fixtures';
 import { expectResponse, wrap } from './helpers';
 
 const getObject: jest.Mock = getObjectMock;
@@ -94,5 +94,29 @@ describe('app', () => {
       200,
       true,
     );
+  });
+
+  it('returns original SVG', async () => {
+    getObject.mockResolvedValueOnce({
+      Body: smallSvgFixture,
+    });
+
+    const response = await wrap(
+      server
+        .get('/test-file-name')
+        .set('Accept', 'image/svg+xml')
+        .expect(200)
+        .expect('Content-Type', /image\/svg\+xml/),
+    );
+
+    await expect(response.body.toString('ascii')).toMatchSnapshot();
+  });
+
+  it('returns original SVG converted to png', async () => {
+    getObject.mockResolvedValueOnce({
+      Body: smallSvgFixture,
+    });
+
+    await expectResponse(server, '/test-file-name', 'image/png', 200, true);
   });
 });
