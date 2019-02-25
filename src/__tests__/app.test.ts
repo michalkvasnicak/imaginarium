@@ -2,8 +2,8 @@
 import { AWSError, getObjectMock } from 'aws-sdk';
 import request from 'supertest';
 import app from '../app';
-import { jpegBigFixture } from './fixtures';
-import { wrap } from './helpers';
+import { jpegBigFixture, owlFixture } from './fixtures';
+import { expectResponse, wrap } from './helpers';
 
 const getObject: jest.Mock = getObjectMock;
 const server = request(app);
@@ -18,7 +18,7 @@ describe('app', () => {
   });
 
   it('returns 404 if unknown route is used', async () => {
-    await wrap(server.get('/test-filename/trololo').expect(404));
+    await wrap(server.get('/img/test-filename/trololo').expect(404));
   });
 
   it('returns 404 if photo is not found', async () => {
@@ -71,6 +71,28 @@ describe('app', () => {
         )
         .expect(200)
         .expect('Content-Type', /image\/webp/),
+    );
+  });
+
+  it('returns original of image (without parameters)', async () => {
+    getObject.mockResolvedValueOnce({
+      Body: owlFixture,
+    });
+
+    await expectResponse(server, `/test-file-name`, 'image/png', 200, true);
+  });
+
+  it('returns original of image (with parameters)', async () => {
+    getObject.mockResolvedValueOnce({
+      Body: owlFixture,
+    });
+
+    await expectResponse(
+      server,
+      `/test-file-name/quality(30)blur(10)`,
+      'image/png',
+      200,
+      true,
     );
   });
 });

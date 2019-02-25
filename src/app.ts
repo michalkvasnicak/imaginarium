@@ -311,4 +311,19 @@ app.get(
   manipulator,
 );
 
+app.get(
+  `/:filename/${parameters}`,
+  (req, res, next) => {
+    const { parameters = '' } = req.params;
+    const manipulation: ManipulationFn = image => image;
+    const manipulationParameters = parseParameters(parameters);
+
+    (req as any).manipulation = manipulation;
+    (req as any).manipulationParameters = manipulationParameters;
+
+    next();
+  },
+  manipulator,
+);
+
 export default app;
