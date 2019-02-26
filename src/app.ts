@@ -1,6 +1,6 @@
 import { S3 } from 'aws-sdk';
 import express from 'express';
-import sharp, { ResizeOptions, Sharp, cache } from 'sharp';
+import sharp, { ResizeOptions } from 'sharp';
 import parseParameters, { Parameters } from './parseParameters';
 
 const region = process.env.AWS_REGION;
