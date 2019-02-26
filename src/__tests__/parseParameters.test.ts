@@ -13,6 +13,17 @@ describe('parseParameters', () => {
     });
   });
 
+  it('parses format setting', () => {
+    expect(parseParameters('svg')).toEqual({ format: 'image/svg+xml' });
+    expect(parseParameters('SVG')).toEqual({ format: 'image/svg+xml' });
+    expect(parseParameters('jpeg')).toEqual({ format: 'image/jpeg' });
+    expect(parseParameters('JPEG')).toEqual({ format: 'image/jpeg' });
+    expect(parseParameters('png')).toEqual({ format: 'image/png' });
+    expect(parseParameters('PNG')).toEqual({ format: 'image/png' });
+    expect(parseParameters('webp')).toEqual({ format: 'image/webp' });
+    expect(parseParameters('WEBP')).toEqual({ format: 'image/webp' });
+  });
+
   it('parses progressive setting', () => {
     expect(parseParameters('progressive')).toEqual({ progressive: true });
     expect(parseParameters('progressive(1)')).toEqual({ progressive: true });

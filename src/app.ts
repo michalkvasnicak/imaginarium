@@ -25,8 +25,6 @@ type ManipulationParameters = Parameters & {
   resize?: ResizeOptions;
 };
 
-// type ManipulationFn = (image: sharp.Sharp) => sharp.Sharp;
-
 const defaultS3Params = {
   Bucket: bucket,
 };
@@ -126,17 +124,10 @@ async function processImage(
 }
 
 const manipulator: express.RequestHandler = async (req, res, next) => {
-  // check if there is a manipulator
-  /* if ((req as any).manipulation == null) {
-    return res.sendStatus(404);
-  }*/
-
   try {
     const {
-      // manipulation,
       manipulationParameters,
     }: {
-      // manipulation: ManipulationFn;
       manipulationParameters: Parameters & { resize?: ResizeOptions };
     } = req as any;
     const file = await s3
@@ -146,37 +137,15 @@ const manipulator: express.RequestHandler = async (req, res, next) => {
       })
       .promise();
     const cacheControl = 'max-age=31556926, immutable'; // 1 year of immutable
-    const originalImage = sharp(file.Body as Buffer);
-    const {
-      alphaQuality,
-      blur,
-      progressive,
-      quality = 80,
-      rotate,
-    } = manipulationParameters;
-    /* const applyOperations = (originalImage: Sharp) => {
-      let image = manipulation(originalImage);
 
-      // apply operations
-      if (rotate != null) {
-        image = image.rotate(rotate.angle, {
-          background: rotate.background,
-        });
-      }
-
-      if (blur != null) {
-        image = image.blur(blur !== true ? blur : undefined);
-      }
-
-      return image;
-    };*/
-
-    const requestedContentType = req.accepts([
-      'image/jpeg',
-      'image/png',
-      'image/webp',
-      'image/svg+xml',
-    ]) as ManipulationParameters['format'] | false;
+    const requestedContentType =
+      manipulationParameters.format ||
+      (req.accepts([
+        'image/jpeg',
+        'image/png',
+        'image/webp',
+        'image/svg+xml',
+      ]) as ManipulationParameters['format'] | false);
 
     if (requestedContentType === false) {
       return res.send(406);
@@ -253,22 +222,6 @@ app.get(
         normalizedPosition,
       withoutEnlargement: !!unlarge,
     };
-    /* const manipulation: ManipulationFn = image => {
-      const normalizedPosition: string = position.replace('-', ' ');
-
-      return image.resize(
-        width ? Number(width) : undefined,
-        height ? Number(height) : undefined,
-        {
-          fit: sharp.fit.cover,
-          position:
-            (sharp.gravity as any)[normalizedPosition] ||
-            (sharp.strategy as any)[normalizedPosition] ||
-            normalizedPosition,
-          withoutEnlargement: !!unlarge,
-        },
-      );
-    };*/
     const manipulationParameters = parseParameters(parameters);
 
     // (req as any).manipulation = { ...manipulationParameters, resize };
@@ -317,7 +270,6 @@ app.get(
 
     const manipulationParameters = parseParameters(parameters);
 
-    // (req as any).manipulation = manipulation;
     (req as any).manipulationParameters = { ...manipulationParameters, resize };
 
     next();

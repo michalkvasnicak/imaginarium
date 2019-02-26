@@ -10,18 +10,27 @@ const blurSigma = '(0?.[3-9]|[0-9]{1,3}|1000)';
 const alphaQuality = new RegExp(`alphaQuality\\(${qualityInt}\\)`, 'g');
 const quality = new RegExp(`quality\\(${qualityInt}\\)`, 'g');
 const blur = new RegExp(`blur(?:\\(${blurSigma}\\))?`, 'g');
+const format = new RegExp(`(svg|jpeg|webp|png)`, 'gi');
 const rotate = new RegExp(`rotate\\((-?\\d{1,3})(?:,\\s*${color})?\\)`, 'g');
 const progressive = /progressive(?:\((1|true|0|false)\))?/g;
 
 export type Parameters = {
   alphaQuality?: number; // alphaQuality for webp format
   blur?: number | true; // if number, gaussian blur with sigma is used
+  format?: 'image/jpeg' | 'image/png' | 'image/webp' | 'image/svg+xml';
   progressive?: boolean;
   rotate?: {
     angle: number;
     background?: string;
   };
   quality?: number;
+};
+
+const formats: { [format: string]: Parameters['format'] } = {
+  jpeg: 'image/jpeg',
+  png: 'image/png',
+  svg: 'image/svg+xml',
+  webp: 'image/webp',
 };
 
 export default function paramParser(params: string): Parameters {
@@ -35,6 +44,12 @@ export default function paramParser(params: string): Parameters {
 
   params.replace(blur, (match: string, sigma: string | undefined) => {
     parameters.blur = sigma != null ? Number(sigma) : true;
+
+    return match;
+  });
+
+  params.replace(format, (match: string, format: string) => {
+    parameters.format = formats[format.toLowerCase() as keyof (typeof formats)];
 
     return match;
   });

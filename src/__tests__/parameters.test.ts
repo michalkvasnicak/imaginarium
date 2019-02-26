@@ -3,7 +3,7 @@ import { getObjectMock } from 'aws-sdk';
 import request from 'supertest';
 import app from '../app';
 import { owlFixture } from './fixtures';
-import { expectResponse } from './helpers';
+import { expectResponse, wrap } from './helpers';
 
 const getObject: jest.Mock = getObjectMock;
 const server = request(app);
@@ -47,6 +47,16 @@ describe('parameters', () => {
       'image/png',
       200,
       true,
+    );
+  });
+
+  it('overrides Accept header using format parameters', async () => {
+    await wrap(
+      server
+        .get('/owl/cover/attention/100x100/webp')
+        .set('Accept', 'image/png')
+        .expect(200)
+        .expect('Content-Type', /image\/webp/),
     );
   });
 });
