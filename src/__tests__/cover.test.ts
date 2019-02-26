@@ -2,7 +2,12 @@
 import { getObjectMock } from 'aws-sdk';
 import request from 'supertest';
 import app from '../app';
-import { jpegBigFixture, owlFixture, pngFixture } from './fixtures';
+import {
+  jpegBigFixture,
+  owlFixture,
+  pngFixture,
+  smallSvgFixture,
+} from './fixtures';
 import { expectResponse, gravity, position, strategy } from './helpers';
 
 const getObject: jest.Mock = getObjectMock;
@@ -59,6 +64,60 @@ describe('resize (cover)', () => {
       await expectResponse(
         server,
         '/test-file-name/resize/w100',
+        'image/jpeg',
+        200,
+      );
+    });
+
+    it('resizes svg (enlarge)', async () => {
+      getObject.mockResolvedValue({
+        Body: smallSvgFixture,
+      });
+
+      // test snapshot only here because image snapshot does not support other formats
+      await expectResponse(
+        server,
+        '/test-file-name/resize/w100',
+        'image/png',
+        200,
+        true,
+      );
+      await expectResponse(
+        server,
+        '/test-file-name/resize/w100',
+        'image/webp',
+        200,
+      );
+      await expectResponse(
+        server,
+        '/test-file-name/resize/w100',
+        'image/jpeg',
+        200,
+      );
+    });
+
+    it('resizes svg (shrink)', async () => {
+      getObject.mockResolvedValue({
+        Body: smallSvgFixture,
+      });
+
+      // test snapshot only here because image snapshot does not support other formats
+      await expectResponse(
+        server,
+        '/test-file-name/resize/w20',
+        'image/png',
+        200,
+        true,
+      );
+      await expectResponse(
+        server,
+        '/test-file-name/resize/w20',
+        'image/webp',
+        200,
+      );
+      await expectResponse(
+        server,
+        '/test-file-name/resize/w20',
         'image/jpeg',
         200,
       );
@@ -145,6 +204,60 @@ describe('resize (cover)', () => {
       await expectResponse(
         server,
         '/test-file-name/resize/w100',
+        'image/jpeg',
+        200,
+      );
+    });
+
+    it('resizes svg (enlarge)', async () => {
+      getObject.mockResolvedValue({
+        Body: smallSvgFixture,
+      });
+
+      // test snapshot only here because image snapshot does not support other formats
+      await expectResponse(
+        server,
+        '/test-file-name/resize/h100',
+        'image/png',
+        200,
+        true,
+      );
+      await expectResponse(
+        server,
+        '/test-file-name/resize/h100',
+        'image/webp',
+        200,
+      );
+      await expectResponse(
+        server,
+        '/test-file-name/resize/h100',
+        'image/jpeg',
+        200,
+      );
+    });
+
+    it('resizes svg (shrink)', async () => {
+      getObject.mockResolvedValue({
+        Body: smallSvgFixture,
+      });
+
+      // test snapshot only here because image snapshot does not support other formats
+      await expectResponse(
+        server,
+        '/test-file-name/resize/h20',
+        'image/png',
+        200,
+        true,
+      );
+      await expectResponse(
+        server,
+        '/test-file-name/resize/h20',
+        'image/webp',
+        200,
+      );
+      await expectResponse(
+        server,
+        '/test-file-name/resize/h20',
         'image/jpeg',
         200,
       );

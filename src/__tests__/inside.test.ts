@@ -2,7 +2,7 @@
 import { getObjectMock } from 'aws-sdk';
 import request from 'supertest';
 import app from '../app';
-import { jpegBigFixture, pngFixture } from './fixtures';
+import { jpegBigFixture, pngFixture, smallSvgFixture } from './fixtures';
 import { expectResponse, wrap } from './helpers';
 
 const getObject: jest.Mock = getObjectMock;
@@ -72,6 +72,60 @@ describe('resize (inside)', () => {
       await expectResponse(
         server,
         '/test-file-name/inside/100x100',
+        'image/jpeg',
+        200,
+      );
+    });
+
+    it('resizes svg (enlarge)', async () => {
+      getObject.mockResolvedValue({
+        Body: smallSvgFixture,
+      });
+
+      // test snapshot only here because image snapshot does not support other formats
+      await expectResponse(
+        server,
+        '/test-file-name/inside/100x100',
+        'image/png',
+        200,
+        true,
+      );
+      await expectResponse(
+        server,
+        '/test-file-name/inside/100x100',
+        'image/webp',
+        200,
+      );
+      await expectResponse(
+        server,
+        '/test-file-name/inside/100x100',
+        'image/jpeg',
+        200,
+      );
+    });
+
+    it('resizes svg (shrink)', async () => {
+      getObject.mockResolvedValue({
+        Body: smallSvgFixture,
+      });
+
+      // test snapshot only here because image snapshot does not support other formats
+      await expectResponse(
+        server,
+        '/test-file-name/inside/20x20',
+        'image/png',
+        200,
+        true,
+      );
+      await expectResponse(
+        server,
+        '/test-file-name/inside/20x20',
+        'image/webp',
+        200,
+      );
+      await expectResponse(
+        server,
+        '/test-file-name/inside/20x20',
         'image/jpeg',
         200,
       );
