@@ -1,6 +1,6 @@
 import { S3 } from 'aws-sdk';
 import express from 'express';
-import sharp from 'sharp';
+import sharp, { ResizeOptions } from 'sharp';
 import parseParameters, { Parameters } from './parseParameters';
 
 const region = process.env.AWS_REGION;
@@ -20,7 +20,12 @@ const s3 = new S3({
   region,
 });
 
-type ManipulationFn = (image: sharp.Sharp) => sharp.Sharp;
+type ManipulationParameters = Parameters & {
+  format: 'image/jpeg' | 'image/webp' | 'image/png' | 'image/svg+xml';
+  resize?: ResizeOptions;
+};
+
+// type ManipulationFn = (image: sharp.Sharp) => sharp.Sharp;
 
 const defaultS3Params = {
   Bucket: bucket,
@@ -34,19 +39,105 @@ app.use((req, res, next) => {
   next();
 });
 
+async function processImage(
+  image: Buffer,
+  {
+    alphaQuality,
+    blur,
+    format,
+    progressive,
+    quality,
+    resize,
+    rotate,
+  }: ManipulationParameters,
+): Promise<Buffer> {
+  let source = sharp(image);
+  const sourceMetadata = await source.metadata();
+
+  if (sourceMetadata.format !== 'svg' && format === 'image/svg+xml') {
+    // we don't do any manipulations because we can't
+
+    const err = new Error(`Cannot convert ${sourceMetadata.format} to SVG`);
+    (err as any).statusCode = 406;
+
+    throw err;
+  }
+
+  // if source image is svg and we want svg, return as is
+  // because wa can't perform any manipulations without rasterization
+  if (sourceMetadata.format === 'svg' && format === 'image/svg+xml') {
+    return image;
+  }
+
+  // if source is svg, detect if we have resize parameter
+  // then we need to calculate correct density so we the output image is
+  // as sharp as possible
+  if (sourceMetadata.format === 'svg' && resize != null) {
+    // default pixel density according to
+    // https://www.w3.org/TR/CSS21/syndata.html
+    let density = 96;
+
+    if (resize.width != null) {
+      density = 96 * (resize.width / sourceMetadata.width!);
+    } else if (resize.height != null) {
+      density = 96 * (resize.height / sourceMetadata.height!);
+    } else {
+      throw new Error(
+        'Cannot perform resize without at least one desired dimension',
+      );
+    }
+
+    // create new source
+    source = sharp(image, { density });
+  }
+
+  // apply resize
+  if (resize != null) {
+    source = source.resize(undefined, undefined, resize);
+  }
+
+  // apply rotation
+  if (rotate != null) {
+    source = source.rotate(rotate.angle, {
+      background: rotate.background,
+    });
+  }
+
+  // apply blur
+  if (blur != null) {
+    source = source.blur(blur !== true ? blur : undefined);
+  }
+
+  // now convert to desired output format
+  switch (format) {
+    case 'image/jpeg': {
+      return source.jpeg({ progressive, quality }).toBuffer();
+    }
+    case 'image/png': {
+      return source.png({ progressive }).toBuffer();
+    }
+    case 'image/webp': {
+      return source.webp({ alphaQuality, quality }).toBuffer();
+    }
+    default: {
+      throw new Error(`Unknown format ${format}`);
+    }
+  }
+}
+
 const manipulator: express.RequestHandler = async (req, res, next) => {
   // check if there is a manipulator
-  if ((req as any).manipulation == null) {
+  /* if ((req as any).manipulation == null) {
     return res.sendStatus(404);
-  }
+  }*/
 
   try {
     const {
-      manipulation,
+      // manipulation,
       manipulationParameters,
     }: {
-      manipulation: ManipulationFn;
-      manipulationParameters: Parameters;
+      // manipulation: ManipulationFn;
+      manipulationParameters: Parameters & { resize?: ResizeOptions };
     } = req as any;
     const file = await s3
       .getObject({
@@ -54,8 +145,8 @@ const manipulator: express.RequestHandler = async (req, res, next) => {
         Key: fileKeyPattern.replace(':filename', req.params.filename),
       })
       .promise();
-    let image = manipulation(sharp(file.Body as Buffer));
     const cacheControl = 'max-age=31556926, immutable'; // 1 year of immutable
+    const originalImage = sharp(file.Body as Buffer);
     const {
       alphaQuality,
       blur,
@@ -63,57 +154,51 @@ const manipulator: express.RequestHandler = async (req, res, next) => {
       quality = 80,
       rotate,
     } = manipulationParameters;
+    /* const applyOperations = (originalImage: Sharp) => {
+      let image = manipulation(originalImage);
 
-    // apply operations
-    if (rotate != null) {
-      image = image.rotate(rotate.angle, {
-        background: rotate.background,
-      });
+      // apply operations
+      if (rotate != null) {
+        image = image.rotate(rotate.angle, {
+          background: rotate.background,
+        });
+      }
+
+      if (blur != null) {
+        image = image.blur(blur !== true ? blur : undefined);
+      }
+
+      return image;
+    };*/
+
+    const requestedContentType = req.accepts([
+      'image/jpeg',
+      'image/png',
+      'image/webp',
+      'image/svg+xml',
+    ]) as ManipulationParameters['format'] | false;
+
+    if (requestedContentType === false) {
+      return res.send(406);
     }
 
-    if (blur != null) {
-      image = image.blur(blur !== true ? blur : undefined);
-    }
+    const parameters: ManipulationParameters = {
+      ...manipulationParameters,
+      format: requestedContentType,
+    };
 
-    // negotiate content
-    switch (req.accepts(['image/jpeg', 'image/png', 'image/webp'])) {
-      case 'image/webp': {
-        const body = await image
-          .toFormat('webp', { alphaQuality, quality })
-          .toBuffer();
-        res.set('Content-Type', 'image/webp');
-        res.set('Content-Length', body.byteLength.toString());
-        res.set('Cache-Control', cacheControl);
-        res.status(200);
-        return res.send(body);
-      }
-      case 'image/png': {
-        const body = await image
-          .toFormat('png', { progressive, quality })
-          .toBuffer();
-        res.set('Content-Type', 'image/png');
-        res.set('Content-Length', body.byteLength.toString());
-        res.set('Cache-Control', cacheControl);
-        res.status(200);
-        return res.send(body);
-      }
-      case 'image/jpeg': {
-        const body = await image
-          .toFormat('jpeg', { progressive, quality })
-          .toBuffer();
-        res.set('Content-Type', 'image/jpeg');
-        res.set('Content-Length', body.byteLength.toString());
-        res.set('Cache-Control', cacheControl);
-        res.status(200);
-        return res.send(body);
-      }
-      default: {
-        return res.sendStatus(406);
-      }
-    }
+    const body = await processImage(file.Body as Buffer, parameters);
+
+    res.set('Content-Type', requestedContentType);
+    res.set('Content-Length', body.byteLength.toString());
+    res.set('Cache-Control', cacheControl);
+    res.status(200);
+
+    return res.send(body);
   } catch (e) {
-    if ((e as AWS.AWSError).statusCode === 404) {
-      return res.sendStatus(404);
+    if ((e as any).statusCode != null) {
+      // @ts-ignore
+      return res.send(e.statusCode, e.message);
     }
 
     next(e);
@@ -157,7 +242,18 @@ app.get(
       unlarge = false,
       width,
     } = req.params;
-    const manipulation: ManipulationFn = image => {
+    const normalizedPosition: string = position.replace('-', ' ');
+    const resize: ResizeOptions = {
+      height: height ? Number(height) : undefined,
+      width: width ? Number(width) : undefined,
+      fit: sharp.fit.cover,
+      position:
+        (sharp.gravity as any)[normalizedPosition] ||
+        (sharp.strategy as any)[normalizedPosition] ||
+        normalizedPosition,
+      withoutEnlargement: !!unlarge,
+    };
+    /* const manipulation: ManipulationFn = image => {
       const normalizedPosition: string = position.replace('-', ' ');
 
       return image.resize(
@@ -172,11 +268,11 @@ app.get(
           withoutEnlargement: !!unlarge,
         },
       );
-    };
+    };*/
     const manipulationParameters = parseParameters(parameters);
 
-    (req as any).manipulation = manipulation;
-    (req as any).manipulationParameters = manipulationParameters;
+    // (req as any).manipulation = { ...manipulationParameters, resize };
+    (req as any).manipulationParameters = { ...manipulationParameters, resize };
 
     next();
   },
@@ -208,22 +304,21 @@ app.get(
       unlarge = false,
       width,
     } = req.params;
-    const manipulation: ManipulationFn = image => {
-      const normalizedPosition: string = position.replace('-', ' ');
-
-      return image.resize(Number(width), Number(height), {
-        background,
-        fit: sharp.fit.contain,
-        position:
-          (sharp.gravity as any)[normalizedPosition] || normalizedPosition,
-        withoutEnlargement: !!unlarge,
-      });
+    const normalizedPosition: string = position.replace('-', ' ');
+    const resize: ResizeOptions = {
+      background,
+      fit: sharp.fit.contain,
+      height: Number(height),
+      width: Number(width),
+      position:
+        (sharp.gravity as any)[normalizedPosition] || normalizedPosition,
+      withoutEnlargement: !!unlarge,
     };
 
     const manipulationParameters = parseParameters(parameters);
 
-    (req as any).manipulation = manipulation;
-    (req as any).manipulationParameters = manipulationParameters;
+    // (req as any).manipulation = manipulation;
+    (req as any).manipulationParameters = { ...manipulationParameters, resize };
 
     next();
   },
@@ -240,17 +335,15 @@ app.get(
   ],
   (req, rest, next) => {
     const { height, parameters = '', unlarge = false, width } = req.params;
-    const manipulation: ManipulationFn = image => {
-      return image.resize(Number(width), Number(height), {
-        fit: sharp.fit.fill,
-        withoutEnlargement: !!unlarge,
-      });
+    const resize: ResizeOptions = {
+      fit: sharp.fit.fill,
+      height: Number(height),
+      width: Number(width),
+      withoutEnlargement: !!unlarge,
     };
-
     const manipulationParameters = parseParameters(parameters);
 
-    (req as any).manipulation = manipulation;
-    (req as any).manipulationParameters = manipulationParameters;
+    (req as any).manipulationParameters = { ...manipulationParameters, resize };
 
     next();
   },
@@ -267,17 +360,15 @@ app.get(
   ],
   (req, rest, next) => {
     const { height, parameters = '', unlarge = false, width } = req.params;
-    const manipulation: ManipulationFn = image => {
-      return image.resize(Number(width), Number(height), {
-        fit: sharp.fit.inside,
-        withoutEnlargement: !!unlarge,
-      });
+    const resize: ResizeOptions = {
+      fit: sharp.fit.inside,
+      height: Number(height),
+      width: Number(width),
+      withoutEnlargement: !!unlarge,
     };
-
     const manipulationParameters = parseParameters(parameters);
 
-    (req as any).manipulation = manipulation;
-    (req as any).manipulationParameters = manipulationParameters;
+    (req as any).manipulationParameters = { ...manipulationParameters, resize };
 
     next();
   },
@@ -294,17 +385,16 @@ app.get(
   ],
   (req, rest, next) => {
     const { height, parameters = '', unlarge = false, width } = req.params;
-    const manipulation: ManipulationFn = image => {
-      return image.resize(Number(width), Number(height), {
-        fit: sharp.fit.outside,
-        withoutEnlargement: !!unlarge,
-      });
-    };
 
+    const resize: ResizeOptions = {
+      fit: sharp.fit.outside,
+      height: Number(height),
+      width: Number(width),
+      withoutEnlargement: !!unlarge,
+    };
     const manipulationParameters = parseParameters(parameters);
 
-    (req as any).manipulation = manipulation;
-    (req as any).manipulationParameters = manipulationParameters;
+    (req as any).manipulationParameters = { ...manipulationParameters, resize };
 
     next();
   },
@@ -315,10 +405,8 @@ app.get(
   `/:filename/${parameters}`,
   (req, res, next) => {
     const { parameters = '' } = req.params;
-    const manipulation: ManipulationFn = image => image;
     const manipulationParameters = parseParameters(parameters);
 
-    (req as any).manipulation = manipulation;
     (req as any).manipulationParameters = manipulationParameters;
 
     next();
