@@ -1,5 +1,4 @@
 import { S3 } from 'aws-sdk';
-import sizeOf from 'image-size';
 import express from 'express';
 import sharp, { ResizeOptions, Sharp, cache } from 'sharp';
 import parseParameters, { Parameters } from './parseParameters';
