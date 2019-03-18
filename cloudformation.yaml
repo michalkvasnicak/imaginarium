@@ -1,76 +1,76 @@
-AWSTemplateFormatVersion: '2010-09-09'
-Transform: 'AWS::Serverless-2016-10-31'
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: "AWS::Serverless-2016-10-31"
 Description: Serverless image processor
 Parameters:
   CDNCertificateArn:
     Type: String
     Description: The ARN for your custom certificate from AWS Certificate Manager
-    Default: ''
+    Default: ""
   CDNAliases:
     Type: CommaDelimitedList
     Description: Domains aliases associated with CloudFront distribution
-    Default: ''
+    Default: ""
   S3FunctionBucket:
     Type: String
     ConstraintDescription: Must be a valid S3 Bucket.
-    MinLength: '1'
-    MaxLength: '64'
-    AllowedPattern: '[a-zA-Z][a-zA-Z0-9-.]*'
+    MinLength: "1"
+    MaxLength: "64"
+    AllowedPattern: "[a-zA-Z][a-zA-Z0-9-.]*"
   S3ImageBucket:
     Type: String
     ConstraintDescription: Must be a valid S3 Bucket.
-    MinLength: '1'
-    MaxLength: '64'
-    AllowedPattern: '[a-zA-Z][a-zA-Z0-9-.]*'
+    MinLength: "1"
+    MaxLength: "64"
+    AllowedPattern: "[a-zA-Z][a-zA-Z0-9-.]*"
   S3ImageKeyPattern:
     Type: String
-    Default: ':filename'
+    Default: ":filename"
   SERVICENAME:
     Type: String
-    MinLength: '1'
+    MinLength: "1"
     Default: imaginarium
 
 Conditions:
-  UseCustomCDNCertificate: !Not [!Equals ['', !Ref CDNCertificateArn]]
+  UseCustomCDNCertificate: !Not [!Equals ["", !Ref CDNCertificateArn]]
 
 Resources:
   ImaginariumApiGWRole:
     Type: AWS::IAM::Role
     Properties:
       AssumeRolePolicyDocument:
-        Version: '2012-10-17'
+        Version: "2012-10-17"
         Statement:
           - Effect: Allow
             Principal:
-              Service: 'apigateway.amazonaws.com'
+              Service: "apigateway.amazonaws.com"
             Action:
-              - 'sts:AssumeRole'
+              - "sts:AssumeRole"
       Policies:
-        - PolicyName: !Sub '${AWS::StackName}-agw-cloud-watch-policy'
+        - PolicyName: !Sub "${AWS::StackName}-agw-cloud-watch-policy"
           PolicyDocument:
-            Version: '2012-10-17'
+            Version: "2012-10-17"
             Statement:
-              - Effect: 'Allow'
+              - Effect: "Allow"
                 Action:
-                  - 'logs:CreateLogGroup'
-                  - 'logs:CreateLogStream'
-                  - 'logs:DescribeLogGroups'
-                  - 'logs:DescribeLogStreams'
-                  - 'logs:PutLogEvents'
-                  - 'logs:GetLogEvents'
-                  - 'logs:FilterLogEvents'
-                Resource: '*'
-        - PolicyName: !Sub '${AWS::StackName}-agw-lambda-policy'
+                  - "logs:CreateLogGroup"
+                  - "logs:CreateLogStream"
+                  - "logs:DescribeLogGroups"
+                  - "logs:DescribeLogStreams"
+                  - "logs:PutLogEvents"
+                  - "logs:GetLogEvents"
+                  - "logs:FilterLogEvents"
+                Resource: "*"
+        - PolicyName: !Sub "${AWS::StackName}-agw-lambda-policy"
           PolicyDocument:
-            Version: '2012-10-17'
+            Version: "2012-10-17"
             Statement:
               - Effect: Allow
-                Action: 'lambda:InvokeFunction'
+                Action: "lambda:InvokeFunction"
                 Resource:
-                  - '*'
+                  - "*"
 
   ImaginariumApiGWAccount:
-    Type: 'AWS::ApiGateway::Account'
+    Type: "AWS::ApiGateway::Account"
     Properties:
       CloudWatchRoleArn: !GetAtt ImaginariumApiGWRole.Arn
 
@@ -81,21 +81,21 @@ Resources:
       DeploymentId: !Ref ImaginariumApiDeployment
       MethodSettings:
         - DataTraceEnabled: False
-          HttpMethod: '*'
+          HttpMethod: "*"
           LoggingLevel: ERROR
-          ResourcePath: '/*'
+          ResourcePath: "/*"
       RestApiId: !Ref ImaginariumApi
       StageName: LATEST
 
   ImaginariumApiDeployment:
-    Type: 'AWS::ApiGateway::Deployment'
+    Type: "AWS::ApiGateway::Deployment"
     Properties:
       RestApiId: !Ref ImaginariumApi
       StageName: production
 
   ImaginariumApi:
     DependsOn: [ImageHandlerFunction, ImaginariumApiGWRole]
-    Type: 'AWS::ApiGateway::RestApi'
+    Type: "AWS::ApiGateway::RestApi"
     Properties:
       Name: !Sub ${SERVICENAME}
       EndpointConfiguration:
@@ -109,13 +109,13 @@ Resources:
         schemes:
           - https
         x-amazon-apigateway-binary-media-types:
-          - 'image/webp'
-          - 'image/png'
-          - 'image/jpeg'
-          - 'text/html'
+          - "image/webp"
+          - "image/png"
+          - "image/jpeg"
+          - "text/html"
           # this is here because apigateway takes it from text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8 :()
         paths:
-          '/{proxy+}':
+          "/{proxy+}":
             get:
               parameters:
                 - name: proxy
@@ -127,7 +127,7 @@ Resources:
                 # otherwise it will treat everything else as binary
                 - application/json
               responses:
-                '200':
+                "200":
                   description: Success
                   headers:
                     Content-Type:
@@ -135,14 +135,14 @@ Resources:
               x-amazon-apigateway-integration:
                 credentials: !GetAtt ImaginariumApiGWRole.Arn
                 responses:
-                  '200':
+                  "200":
                     statusCode: 200
                 uri: !Join
-                  - ''
-                  - - 'arn:aws:apigateway:'
-                    - !Ref 'AWS::Region'
-                    - ':'
-                    - 'lambda:path/2015-03-31/functions/'
+                  - ""
+                  - - "arn:aws:apigateway:"
+                    - !Ref "AWS::Region"
+                    - ":"
+                    - "lambda:path/2015-03-31/functions/"
                     - !GetAtt
                       - ImageHandlerFunction
                       - Arn
@@ -151,16 +151,16 @@ Resources:
                 type: aws_proxy
 
   ImageHandlerLogGroup:
-    Type: 'AWS::Logs::LogGroup'
+    Type: "AWS::Logs::LogGroup"
     Properties:
       RetentionInDays: 1
       LogGroupName: !Join
-        - ''
+        - ""
         - - /aws/lambda/
           - !Ref ImageHandlerFunction
 
   ImageHandlerRole:
-    Type: 'AWS::IAM::Role'
+    Type: "AWS::IAM::Role"
     Properties:
       AssumeRolePolicyDocument:
         Version: 2012-10-17
@@ -170,21 +170,21 @@ Resources:
               Service:
                 - lambda.amazonaws.com
             Action:
-              - 'sts:AssumeRole'
+              - "sts:AssumeRole"
       Path: /
       RoleName: !Join
-        - ''
-        - - !Ref 'AWS::StackName'
+        - ""
+        - - !Ref "AWS::StackName"
           - Role
       ManagedPolicyArns:
-        - 'arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole'
+        - "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
 
   ImageHandlerS3CodePolicy:
-    Type: 'AWS::IAM::Policy'
+    Type: "AWS::IAM::Policy"
     Properties:
       PolicyName: !Join
-        - ''
-        - - !Ref 'AWS::StackName'
+        - ""
+        - - !Ref "AWS::StackName"
           - S3CodeReadPolicy
       Roles:
         - !Ref ImageHandlerRole
@@ -193,16 +193,16 @@ Resources:
         Statement:
           - Effect: Allow
             Action:
-              - 's3:GetObject'
+              - "s3:GetObject"
             Resource:
               - !Sub arn:aws:s3:::${S3FunctionBucket}/*
 
   ImageHandlerS3ImagesReadPolicy:
-    Type: 'AWS::IAM::Policy'
+    Type: "AWS::IAM::Policy"
     Properties:
       PolicyName: !Join
-        - ''
-        - - !Ref 'AWS::StackName'
+        - ""
+        - - !Ref "AWS::StackName"
           - S3ImagesReadPolicy
       Roles:
         - !Ref ImageHandlerRole
@@ -211,16 +211,16 @@ Resources:
         Statement:
           - Effect: Allow
             Action:
-              - 's3:GetObject'
+              - "s3:GetObject"
             Resource:
               - !Sub arn:aws:s3:::${S3ImageBucket}/*
 
   ImageHandlerLogPolicy:
-    Type: 'AWS::IAM::Policy'
+    Type: "AWS::IAM::Policy"
     Properties:
       PolicyName: !Join
-        - ''
-        - - !Ref 'AWS::StackName'
+        - ""
+        - - !Ref "AWS::StackName"
           - LogPolicy
       Roles:
         - !Ref ImageHandlerRole
@@ -229,23 +229,23 @@ Resources:
         Statement:
           - Effect: Allow
             Action:
-              - 'logs:CreateLogGroup'
-              - 'logs:CreateLogStream'
-              - 'logs:PutLogEvents'
-            Resource: !Sub 'arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/*'
+              - "logs:CreateLogGroup"
+              - "logs:CreateLogStream"
+              - "logs:PutLogEvents"
+            Resource: !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/*"
 
   ImageHandlerPermission:
     DependsOn: [ImageHandlerFunction]
-    Type: 'AWS::Lambda::Permission'
+    Type: "AWS::Lambda::Permission"
     Properties:
-      Action: 'lambda:invokeFunction'
+      Action: "lambda:invokeFunction"
       FunctionName: !GetAtt ImageHandlerFunction.Arn
       Principal: apigateway.amazonaws.com
       SourceAccount: !Ref AWS::AccountId
-      SourceArn: !Sub 'arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:*/*/*/*'
+      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:*/*/*/*"
 
   ImageHandlerFunction:
-    Type: 'AWS::Serverless::Function'
+    Type: "AWS::Serverless::Function"
     Properties:
       CodeUri: ./dist
       Description: Imaginarium image handler
@@ -273,7 +273,7 @@ Resources:
         Enabled: True
         HttpVersion: http2
         Comment: !Sub ${AWS::StackName} CDN distribution
-        PriceClass: 'PriceClass_100' # eu, usa, ca
+        PriceClass: "PriceClass_100" # eu, usa, ca
         CustomErrorResponses:
           - ErrorCode: 405
             ErrorCachingMinTTL: 10
@@ -288,7 +288,7 @@ Resources:
           - ErrorCode: 504
             ErrorCachingMinTTL: 10
         Origins:
-          - DomainName: !Sub '${ImaginariumApi}.execute-api.${AWS::Region}.amazonaws.com'
+          - DomainName: !Sub "${ImaginariumApi}.execute-api.${AWS::Region}.amazonaws.com"
             OriginPath: /production
             Id: !Ref ImaginariumApi
             CustomOriginConfig:
@@ -299,12 +299,12 @@ Resources:
                 - TLSv1.1
                 - TLSv1.2
         DefaultCacheBehavior:
-          AllowedMethods: ['HEAD', 'GET']
+          AllowedMethods: ["HEAD", "GET"]
           DefaultTTL: 0 # do not cache if Cache-Control headers are not present
           ForwardedValues:
             Cookies:
               Forward: none
-            QueryString: False
+            QueryString: True
             Headers:
               - Accept # cache based on Accept header so we can have one URL for multiple accepted types
           ViewerProtocolPolicy: redirect-to-https
@@ -321,7 +321,7 @@ Resources:
 Outputs:
   ApiUrl:
     Description: URL
-    Value: !Sub 'https://${ImaginariumApi}.execute-api.${AWS::Region}.amazonaws.com/production'
+    Value: !Sub "https://${ImaginariumApi}.execute-api.${AWS::Region}.amazonaws.com/production"
   CDNId:
     Description: CDN ID
     Value: !Ref CDN
