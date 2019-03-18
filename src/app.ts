@@ -86,7 +86,7 @@ async function processImage(
     }
 
     // create new source
-    source = sharp(image, { density });
+    source = sharp(image, { density: Math.min(density, 2400) });
   }
 
   // apply resize
