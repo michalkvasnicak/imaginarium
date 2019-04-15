@@ -41,6 +41,7 @@ async function processImage(
   image: Buffer,
   {
     alphaQuality,
+    background,
     blur,
     format,
     progressive,
@@ -91,7 +92,10 @@ async function processImage(
 
   // apply resize
   if (resize != null) {
-    source = source.resize(undefined, undefined, resize);
+    source = source.resize(undefined, undefined, {
+      ...resize,
+      background,
+    });
   }
 
   // apply rotation
