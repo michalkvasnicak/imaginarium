@@ -8,7 +8,6 @@ const qualityInt = '([1-9]|[1-9][0-9]|100)';
 const blurSigma = '(0?.[3-9]|[0-9]{1,3}|1000)';
 
 const alphaQuality = () => new RegExp(`alphaQuality\\(${qualityInt}\\)`, 'g');
-const background = () => new RegExp(`(?:bg|background)\\(${color}\\)`, 'g');
 const quality = () => new RegExp(`quality\\(${qualityInt}\\)`, 'g');
 const blur = () => new RegExp(`blur(?:\\(${blurSigma}\\))?`, 'g');
 const format = () => new RegExp(`(svg|jpeg|webp|png)`, 'gi');
@@ -18,7 +17,6 @@ const progressive = () => /progressive(?:\((1|true|0|false)\))?/g;
 
 export type Parameters = {
   alphaQuality?: number; // alphaQuality for webp format
-  background?: string; // optional background for resize canvas
   blur?: number | true; // if number, gaussian blur with sigma is used
   format?: 'image/jpeg' | 'image/png' | 'image/webp' | 'image/svg+xml';
   progressive?: boolean;
@@ -47,12 +45,6 @@ export default function paramParser(params: string): Parameters {
 
   params.replace(blur(), (match: string, sigma: string | undefined) => {
     parameters.blur = sigma != null ? Number(sigma) : true;
-
-    return match;
-  });
-
-  params.replace(background(), (match: string, color: string | undefined) => {
-    parameters.background = color;
 
     return match;
   });

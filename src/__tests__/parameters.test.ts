@@ -13,16 +13,6 @@ getObject.mockResolvedValue({
 });
 
 describe('parameters', () => {
-  it('resizes with background color', async () => {
-    await expectResponse(
-      server,
-      '/owl/contain/500x500/bg(%23ff0000)',
-      'image/png',
-      200,
-      true,
-    );
-  });
-
   it('blurs image', async () => {
     await expectResponse(
       server,

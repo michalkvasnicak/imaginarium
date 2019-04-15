@@ -80,18 +80,4 @@ describe('parseParameters', () => {
     expect(parseParameters('alphaQuality(50)')).toEqual({ alphaQuality: 50 });
     expect(parseParameters('alphaQuality(100)')).toEqual({ alphaQuality: 100 });
   });
-
-  it('parses background color', () => {
-    // for webp
-    expect(parseParameters('bg')).toEqual({});
-    expect(parseParameters('bg()')).toEqual({});
-    expect(parseParameters('bg(#000)')).toEqual({ background: '#000' });
-    expect(parseParameters('bg(#000000)')).toEqual({ background: '#000000' });
-    expect(parseParameters('bg(rgb(0,0,0))')).toEqual({
-      background: 'rgb(0,0,0)',
-    });
-    expect(parseParameters('bg(rgba(0,0,0,0.1))')).toEqual({
-      background: 'rgba(0,0,0,0.1)',
-    });
-  });
 });
