@@ -1,4 +1,4 @@
-import request from 'supertest';
+import { Response, SuperTest, Test } from 'supertest';
 
 export const gravity = [
   'center',
@@ -23,7 +23,7 @@ export const position = [
 ];
 export const strategy = ['attention', 'entropy'];
 
-export function wrap(request: request.Test): Promise<request.Response> {
+export function wrap(request: Test): Promise<Response> {
   return new Promise((resolve, reject) => {
     request.end((err, res) => {
       return err ? reject(err) : resolve(res);
@@ -32,12 +32,12 @@ export function wrap(request: request.Test): Promise<request.Response> {
 }
 
 export async function expectResponse(
-  request: request.SuperTest<any>,
+  request: SuperTest<any>,
   path: string,
   acceptType: string,
   statusCode: number,
   matchSnapshot: boolean = false,
-): Promise<request.Response> {
+): Promise<Response> {
   const response = await wrap(request.get(path).set('Accept', acceptType));
 
   expect(response.status).toBe(statusCode);

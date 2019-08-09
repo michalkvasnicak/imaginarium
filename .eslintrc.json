@@ -1,16 +1,21 @@
 {
-  "extends": ["plugin:prettier/recommended"],
+  "extends": [
+    "airbnb-typescript/base",
+    "prettier",
+    "prettier/@typescript-eslint"
+  ],
   "parser": "@typescript-eslint/parser",
   "env": {
-    "es6": true,
     "jest": true,
     "node": true,
     "browser": false
   },
+  "plugins": ["prettier"],
   "rules": {
-    "no-console": "off"
-  },
-  "parserOptions": {
-    "sourceType": "module"
+    "class-methods-use-this": "off",
+    "import/prefer-default-export": "off",
+    "import/no-unresolved": "off",
+    "no-console": "off",
+    "prettier/prettier": "error"
   }
 }

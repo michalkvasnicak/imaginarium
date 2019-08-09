@@ -1,3 +1,4 @@
+// eslint-disable-next-line
 import { S3 } from 'aws-sdk';
 import express from 'express';
 import sharp, { ResizeOptions } from 'sharp';
@@ -34,7 +35,7 @@ app.use((req, res, next) => {
     return res.send(405);
   }
 
-  next();
+  return next();
 });
 
 async function processImage(
@@ -170,38 +171,38 @@ const manipulator: express.RequestHandler = async (req, res, next) => {
       return res.send(e.statusCode, e.message);
     }
 
-    next(e);
+    return next(e);
   }
 };
 
-const parameters = ':parameters?';
-const height = ':height([1-9][0-9]{0,3})';
-const width = ':width([1-9][0-9]{0,3})';
-const gravity =
+const parametersPattern = ':parameters?';
+const heightPattern = ':height([1-9][0-9]{0,3})';
+const widthPattern = ':width([1-9][0-9]{0,3})';
+const gravityPattern =
   'center|centre|east|south|southeast|southwest|north|northeast|northwest|west';
-const position =
+const positionPattern =
   'bottom|center|centre|left|left-bottom|left-top|right|right-bottom|right-top|top';
-const strategy = 'attention|entropy';
+const strategyPattern = 'attention|entropy';
 
 // resize respecting aspect ratio
 // object-fit cover
 // https://developer.mozilla.org/en-US/docs/Web/CSS/object-fit
 app.get(
   [
-    `/:filename/resize/w${width}/${parameters}`,
-    `/:filename/:unlarge(unlarge)/resize/w${width}/${parameters}`,
-    `/:filename/cover/w${width}/${parameters}`,
-    `/:filename/:unlarge(unlarge)/cover/w${width}/${parameters}`,
-    `/:filename/resize/h${height}/${parameters}`,
-    `/:filename/:unlarge(unlarge)/resize/h${height}/${parameters}`,
-    `/:filename/cover/h${height}/${parameters}`,
-    `/:filename/:unlarge(unlarge)/cover/h${height}/${parameters}`,
-    `/:filename/resize/${width}x${height}/${parameters}`,
-    `/:filename/:unlarge(unlarge)/resize/${width}x${height}/${parameters}`,
-    `/:filename/cover/${width}x${height}/${parameters}`,
-    `/:filename/:unlarge(unlarge)/cover/${width}x${height}/${parameters}`,
-    `/:filename/cover/:position(${gravity}|${position}|${strategy})/${width}x${height}/${parameters}`,
-    `/:filename/:unlarge(unlarge)/cover/:position(${gravity}|${position}|${strategy})/${width}x${height}/${parameters}`,
+    `/:filename/resize/w${widthPattern}/${parametersPattern}`,
+    `/:filename/:unlarge(unlarge)/resize/w${widthPattern}/${parametersPattern}`,
+    `/:filename/cover/w${widthPattern}/${parametersPattern}`,
+    `/:filename/:unlarge(unlarge)/cover/w${widthPattern}/${parametersPattern}`,
+    `/:filename/resize/h${heightPattern}/${parametersPattern}`,
+    `/:filename/:unlarge(unlarge)/resize/h${heightPattern}/${parametersPattern}`,
+    `/:filename/cover/h${heightPattern}/${parametersPattern}`,
+    `/:filename/:unlarge(unlarge)/cover/h${heightPattern}/${parametersPattern}`,
+    `/:filename/resize/${widthPattern}x${heightPattern}/${parametersPattern}`,
+    `/:filename/:unlarge(unlarge)/resize/${widthPattern}x${heightPattern}/${parametersPattern}`,
+    `/:filename/cover/${widthPattern}x${heightPattern}/${parametersPattern}`,
+    `/:filename/:unlarge(unlarge)/cover/${widthPattern}x${heightPattern}/${parametersPattern}`,
+    `/:filename/cover/:position(${gravityPattern}|${positionPattern}|${strategyPattern})/${widthPattern}x${heightPattern}/${parametersPattern}`,
+    `/:filename/:unlarge(unlarge)/cover/:position(${gravityPattern}|${positionPattern}|${strategyPattern})/${widthPattern}x${heightPattern}/${parametersPattern}`,
   ],
   (req, res, next) => {
     const {
@@ -237,16 +238,16 @@ app.get(
 // https://developer.mozilla.org/en-US/docs/Web/CSS/object-fit
 app.get(
   [
-    `/:filename/contain/${width}x${height}/${parameters}`,
-    `/:filename/contain/bg:background/${width}x${height}/${parameters}`,
-    `/:filename/:unlarge(unlarge)/contain/${width}x${height}/${parameters}`,
-    `/:filename/:unlarge(unlarge)/contain/bg:background/${width}x${height}/${parameters}`,
-    `/:filename/contain/:position(${gravity}|${position})/${width}x${height}/${parameters}`,
-    `/:filename/contain/bg:background/:position(${gravity}|${position})/${width}x${height}/${parameters}`,
-    `/:filename/contain/:position(${gravity}|${position})/bg:background/${width}x${height}/${parameters}`,
-    `/:filename/:unlarge(unlarge)/contain/:position(${gravity}|${position})/${width}x${height}/${parameters}`,
-    `/:filename/:unlarge(unlarge)/contain/bg:bgcolor/:position(${gravity}|${position})/${width}x${height}/${parameters}`,
-    `/:filename/:unlarge(unlarge)/contain/:position(${gravity}|${position})/bg:bgcolor/${width}x${height}/${parameters}`,
+    `/:filename/contain/${widthPattern}x${heightPattern}/${parametersPattern}`,
+    `/:filename/contain/bg:background/${widthPattern}x${heightPattern}/${parametersPattern}`,
+    `/:filename/:unlarge(unlarge)/contain/${widthPattern}x${heightPattern}/${parametersPattern}`,
+    `/:filename/:unlarge(unlarge)/contain/bg:background/${widthPattern}x${heightPattern}/${parametersPattern}`,
+    `/:filename/contain/:position(${gravityPattern}|${positionPattern})/${widthPattern}x${heightPattern}/${parametersPattern}`,
+    `/:filename/contain/bg:background/:position(${gravityPattern}|${positionPattern})/${widthPattern}x${heightPattern}/${parametersPattern}`,
+    `/:filename/contain/:position(${gravityPattern}|${positionPattern})/bg:background/${widthPattern}x${heightPattern}/${parametersPattern}`,
+    `/:filename/:unlarge(unlarge)/contain/:position(${gravityPattern}|${positionPattern})/${widthPattern}x${heightPattern}/${parametersPattern}`,
+    `/:filename/:unlarge(unlarge)/contain/bg:bgcolor/:position(${gravityPattern}|${positionPattern})/${widthPattern}x${heightPattern}/${parametersPattern}`,
+    `/:filename/:unlarge(unlarge)/contain/:position(${gravityPattern}|${positionPattern})/bg:bgcolor/${widthPattern}x${heightPattern}/${parametersPattern}`,
   ],
   (req, rest, next) => {
     const {
@@ -282,8 +283,8 @@ app.get(
 // https://developer.mozilla.org/en-US/docs/Web/CSS/object-fit
 app.get(
   [
-    `/:filename/fill/${width}x${height}/${parameters}`,
-    `/:filename/:unlarge(unlarge)/fill/${width}x${height}/${parameters}`,
+    `/:filename/fill/${widthPattern}x${heightPattern}/${parametersPattern}`,
+    `/:filename/:unlarge(unlarge)/fill/${widthPattern}x${heightPattern}/${parametersPattern}`,
   ],
   (req, rest, next) => {
     const { height, parameters = '', unlarge = false, width } = req.params;
@@ -307,8 +308,8 @@ app.get(
 // http://sharp.pixelplumbing.com/en/stable/api-resize/
 app.get(
   [
-    `/:filename/inside/${width}x${height}/${parameters}`,
-    `/:filename/:unlarge(unlarge)/inside/${width}x${height}/${parameters}`,
+    `/:filename/inside/${widthPattern}x${heightPattern}/${parametersPattern}`,
+    `/:filename/:unlarge(unlarge)/inside/${widthPattern}x${heightPattern}/${parametersPattern}`,
   ],
   (req, rest, next) => {
     const { height, parameters = '', unlarge = false, width } = req.params;
@@ -332,8 +333,8 @@ app.get(
 // http://sharp.pixelplumbing.com/en/stable/api-resize/
 app.get(
   [
-    `/:filename/outside/${width}x${height}/${parameters}`,
-    `/:filename/:unlarge(unlarge)/outside/${width}x${height}/${parameters}`,
+    `/:filename/outside/${widthPattern}x${heightPattern}/${parametersPattern}`,
+    `/:filename/:unlarge(unlarge)/outside/${widthPattern}x${heightPattern}/${parametersPattern}`,
   ],
   (req, rest, next) => {
     const { height, parameters = '', unlarge = false, width } = req.params;
@@ -354,7 +355,7 @@ app.get(
 );
 
 app.get(
-  `/:filename/${parameters}`,
+  `/:filename/${parametersPattern}`,
   (req, res, next) => {
     const { parameters = '' } = req.params;
     const manipulationParameters = parseParameters(parameters);

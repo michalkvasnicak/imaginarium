@@ -252,7 +252,7 @@ Resources:
       FunctionName: !Sub ${SERVICENAME}
       Handler: index.handler
       MemorySize: 1536 # more computing power
-      Runtime: nodejs8.10
+      Runtime: nodejs10.x
       Timeout: 10 # 10 seconds timeout
 
       Tags:

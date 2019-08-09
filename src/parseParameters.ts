@@ -49,8 +49,9 @@ export default function paramParser(params: string): Parameters {
     return match;
   });
 
-  params.replace(format(), (match: string, format: string) => {
-    parameters.format = formats[format.toLowerCase() as keyof (typeof formats)];
+  params.replace(format(), (match: string, matchedFormat: string) => {
+    parameters.format =
+      formats[matchedFormat.toLowerCase() as keyof (typeof formats)];
 
     return match;
   });
@@ -69,13 +70,13 @@ export default function paramParser(params: string): Parameters {
 
   params.replace(
     rotate(),
-    (match: string, angle: string, color: string | undefined) => {
+    (match: string, angle: string, matchedColor: string | undefined) => {
       parameters.rotate = {
         angle: Number(angle),
       };
 
-      if (color) {
-        parameters.rotate.background = color;
+      if (matchedColor) {
+        parameters.rotate.background = matchedColor;
       }
 
       return match;
