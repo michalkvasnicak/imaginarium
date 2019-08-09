@@ -15,6 +15,7 @@ const externals = [
   'color-string',
   'detect-libc',
   'is-arrayish',
+  'file-uri-to-path',
   'semver',
   'sharp',
   'simple-swizzle',
@@ -51,6 +52,11 @@ require('@zeit/ncc')(source, {
       '.npmignore',
       'yarn-error.log',
       'range.bnf',
+      'History.md',
+      'index.d.ts',
+      '.travis.yml',
+      'test.js',
+      'tests.json',
     ];
 
     shell.find(path.resolve(__dirname, './dist/node_modules')).forEach(f => {
