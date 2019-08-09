@@ -1,8 +1,7 @@
 FROM lambci/lambda:build-nodejs10.x
 
 # install yarn
-RUN curl --silent --location https://dl.yarnpkg.com/rpm/yarn.repo | tee /etc/yum.repos.d/yarn.repo
-RUN yum install -y yarn
+RUN npm install yarn -g
 
 ARG AWS_REGION
 ARG AWS_ACCESS_KEY_ID
