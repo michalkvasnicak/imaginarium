@@ -82,6 +82,20 @@ describe('app', () => {
     );
   });
 
+  it('returns jpeg as default content type for any image type', async () => {
+    getObject.mockResolvedValueOnce({
+      Body: jpegBigFixture,
+    });
+
+    await wrap(
+      server
+        .get('/test-file-name/resize/w100')
+        .set('Accept', 'image/*')
+        .expect(200)
+        .expect('Content-Type', /image\/jpeg/),
+    );
+  });
+
   it('returns a webp for complex header', async () => {
     getObject.mockResolvedValueOnce({
       Body: jpegBigFixture,
