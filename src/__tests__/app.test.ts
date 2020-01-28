@@ -31,6 +31,30 @@ describe('app', () => {
   });
 
   it('returns 406 if content could not be negotiated', async () => {
+    getObject
+      .mockResolvedValueOnce({
+        Body: jpegBigFixture,
+      })
+      .mockResolvedValueOnce({
+        Body: jpegBigFixture,
+      });
+
+    await wrap(
+      server
+        .get('/test-file-name/resize/w100')
+        .set('Accept', 'text/plain')
+        .expect(406),
+    );
+
+    await wrap(
+      server
+        .get('/test-file-name/resize/w100/png')
+        .set('Accept', 'image/jpeg')
+        .expect(406),
+    );
+  });
+
+  it('returns jpeg as default if accept header is empty', async () => {
     getObject.mockResolvedValueOnce({
       Body: jpegBigFixture,
     });
@@ -38,8 +62,9 @@ describe('app', () => {
     await wrap(
       server
         .get('/test-file-name/resize/w100')
-        .set('Accept', 'text/plain')
-        .expect(406),
+        .set('Accept', '')
+        .expect(200)
+        .expect('Content-Type', /image\/jpeg/),
     );
   });
 
@@ -52,6 +77,20 @@ describe('app', () => {
       server
         .get('/test-file-name/resize/w100')
         .set('Accept', '*/*')
+        .expect(200)
+        .expect('Content-Type', /image\/jpeg/),
+    );
+  });
+
+  it('returns jpeg as default content type for any image type', async () => {
+    getObject.mockResolvedValueOnce({
+      Body: jpegBigFixture,
+    });
+
+    await wrap(
+      server
+        .get('/test-file-name/resize/w100')
+        .set('Accept', 'image/*')
         .expect(200)
         .expect('Content-Type', /image\/jpeg/),
     );

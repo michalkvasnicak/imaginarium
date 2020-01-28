@@ -32,7 +32,7 @@ const defaultS3Params = {
 
 app.use((req, res, next) => {
   if (req.method !== 'GET') {
-    return res.send(405);
+    return res.sendStatus(405);
   }
 
   return next();
@@ -139,17 +139,34 @@ const manipulator: express.RequestHandler = async (req, res, next) => {
       .promise();
     const cacheControl = 'max-age=31556926, immutable'; // 1 year of immutable
 
-    const requestedContentType =
-      manipulationParameters.format ||
-      (req.accepts([
+    let requestedContentType:
+      | 'image/jpeg'
+      | 'image/png'
+      | 'image/webp'
+      | 'image/svg+xml'
+      | false = false;
+    const forceFormat = manipulationParameters.format;
+
+    // now if force format is set, check if accept headers on request accept it
+    if (forceFormat) {
+      // check if request have proper accept header
+      if (!req.headers.accept || req.accepts(forceFormat)) {
+        requestedContentType = forceFormat;
+      }
+    } else if (!req.headers.accept) {
+      // if request does not have an accept header, treat it as image/jpeg
+      requestedContentType = 'image/jpeg';
+    } else {
+      requestedContentType = req.accepts([
         'image/jpeg',
         'image/png',
         'image/webp',
         'image/svg+xml',
-      ]) as ManipulationParameters['format'] | false);
+      ]) as ManipulationParameters['format'] | false;
+    }
 
     if (requestedContentType === false) {
-      return res.send(406);
+      return res.sendStatus(406);
     }
 
     const parameters: ManipulationParameters = {
@@ -166,9 +183,10 @@ const manipulator: express.RequestHandler = async (req, res, next) => {
 
     return res.send(body);
   } catch (e) {
+    console.log(e);
     if ((e as any).statusCode != null) {
       // @ts-ignore
-      return res.send(e.statusCode, e.message);
+      return res.status(e.statusCode).send(e.message);
     }
 
     return next(e);
